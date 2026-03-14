@@ -1,1 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surprise for Niharika & Kasturika</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Comic Sans MS', cursive, sans-serif; text-align: center; }
+        
+        /* কুইজ প্যানেল */
+        #quiz-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 10; width: 80%; max-width: 400px;
+        }
+        h2 { color: #00A1E9; margin-bottom: 10px; font-size: 2rem; }
+        p { font-size: 1.2rem; color: #333; margin-bottom: 20px; }
+        .option-btn {
+            display: block; width: 100%; margin: 10px 0; padding: 15px;
+            background: #00A1E9; color: white; border: none; border-radius: 10px;
+            font-size: 1.2rem; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,161,233,0.3);
+        }
+        .option-btn:hover { background: #E30022; transform: translateY(-3px); }
 
+        /* নাম ডিসপ্লে */
+        #name-display {
+            display: none; position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 4rem; color: #FFD700; font-weight: bold;
+            text-shadow: 4px 4px 0px #FF4500, 8px 8px 15px rgba(0,0,0,0.5);
+            z-index: 20; white-space: nowrap; pointer-events: none;
+        }
+
+        #canvas-container { display: none; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+    </style>
+</head>
+<body>
+
+    <div id="quiz-container">
+        <h2>Doraemon Quiz!</h2>
+        <p>ডোরেমনের সবচেয়ে প্রিয় খাবার কী?</p>
+        <button class="option-btn" onclick="checkAnswer('Chocolate')">চকোলেট (Chocolate)</button>
+        <button class="option-btn" onclick="checkAnswer('Doracake')">ডোরাকেক (Doracake)</button>
+        <button class="option-btn" onclick="checkAnswer('Biscuit')">বিস্কুট (Biscuit)</button>
+    </div>
+
+    <div id="name-display">Niharika & Kasturika</div>
+
+    <div id="canvas-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <script>
+        // কুইজ লজিক
+        function checkAnswer(answer) {
+            if(answer === 'Doracake') {
+                gsap.to("#quiz-container", { scale: 0, opacity: 0, duration: 0.5, onComplete: () => {
+                    document.getElementById('quiz-container').style.display = 'none';
+                    document.getElementById('canvas-container').style.display = 'block';
+                    init3DScene();
+                }});
+            } else {
+                alert('ভুল উত্তর! ডোরেমন কিন্তু খুব রেগে যাবে, আবার চেষ্টা করো!');
+            }
+        }
+
+        // 3D অ্যানিমেশন
+        function init3DScene() {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            
+            // ক্যামেরা সেটআপ
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 3, 8);
+            camera.lookAt(0, 1, 0);
+
+            // রেন্ডারার
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // লাইট
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(5, 10, 5);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            // --- গিফট বক্স তৈরি ---
+            const boxGroup = new THREE.Group();
+            
+            // বক্সের নিচের অংশ
+            const boxMaterial = new THREE.MeshStandardMaterial({ color: 0xE30022, roughness: 0.5 });
+            const baseGeo = new THREE.BoxGeometry(2, 2, 2);
+            const base = new THREE.Mesh(baseGeo, boxMaterial);
+            base.position.y = 1;
+            base.castShadow = true;
+            boxGroup.add(base);
+
+            // বক্সের ঢাকনা (Lid) এবং পিভট (Hinge)
+            const lidGroup = new THREE.Group();
+            lidGroup.position.set(0, 2, -1); // পেছনে ঘোরার কেন্দ্রবিন্দু
+            const lidGeo = new THREE.BoxGeometry(2.2, 0.2, 2.2);
+            const lidMaterial = new THREE.MeshStandardMaterial({ color: 0xFFD700 }); // সোনালী ঢাকনা
+            const lid = new THREE.Mesh(lidGeo, lidMaterial);
+            lid.position.set(0, 0.1, 1); // পিভট অনুযায়ী পজিশন ঠিক করা
+            lid.castShadow = true;
+            lidGroup.add(lid);
+            boxGroup.add(lidGroup);
+            
+            scene.add(boxGroup);
+
+            // --- কাস্টম ডোরেমন ক্যারেক্টার তৈরি ---
+            const charGroup = new THREE.Group();
+            
+            // বডি (নীল গোলক)
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x00A1E9 });
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), bodyMat);
+            
+            // মুখ (সাদা গোলক)
+            const faceMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const face = new THREE.Mesh(new THREE.SphereGeometry(0.65, 32, 32), faceMat);
+            face.position.set(0, 0.1, 0.3);
+            
+            // নাক (লাল গোলক)
+            const noseMat = new THREE.MeshStandardMaterial({ color: 0xE30022 });
+            const nose = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), noseMat);
+            nose.position.set(0, 0.3, 0.9);
+
+            charGroup.add(body);
+            charGroup.add(face);
+            charGroup.add(nose);
+            
+            // শুরুতে ক্যারেক্টার বক্সের ভেতর লুকিয়ে থাকবে
+            charGroup.position.set(0, 1, 0);
+            charGroup.scale.set(0, 0, 0);
+            scene.add(charGroup);
+
+            // --- GSAP অ্যানিমেশন ---
+            const tl = gsap.timeline({ delay: 0.5 });
+
+            // ১. ঢাকনা পেছনের দিকে খোলা
+            tl.to(lidGroup.rotation, { x: -Math.PI * 0.6, duration: 1.5, ease: "bounce.out" });
+
+            // ২. ক্যারেক্টার লাফিয়ে বক্স থেকে বের হওয়া
+            tl.to(charGroup.scale, { x: 1, y: 1, z: 1, duration: 0.5, ease: "back.out(1.5)" }, "-=0.5");
+            tl.to(charGroup.position, { y: 3.5, duration: 1, ease: "power2.out" }, "-=0.5");
+            tl.to(charGroup.rotation, { y: Math.PI * 4, duration: 2, ease: "power1.inOut" }, "-=1");
+
+            // ৩. অ্যানিমেশনের শেষে নাম ভেসে ওঠা
+            tl.call(() => {
+                const nameTag = document.getElementById('name-display');
+                nameTag.style.display = 'block';
+                gsap.fromTo(nameTag, 
+                    { scale: 0, opacity: 0, y: 50 }, 
+                    { scale: 1, opacity: 1, y: 0, duration: 1.5, ease: "elastic.out(1, 0.4)" }
+                );
+            });
+
+            // রেন্ডার লুপ
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // উইন্ডো রিসাইজ ফিক্স
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+    </script>
+</body>
+</html>
